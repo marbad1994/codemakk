@@ -542,7 +542,7 @@ CODEMAKK_DEFAULT_MODEL=auto-cline
 CODEMAKK_DEFAULT_PROFILE=balanced
 CODEMAKK_DEFAULT_SPEED=5
 CODEMAKK_DEFAULT_LOCAL_PREFERENCE=false
-CODEMAKK_ROUTER_REGISTRY_PATH=../cline-model-router/src/router/modelRegistry.ts
+CODEMAKK_ROUTER_REGISTRY_PATH=../makkorch-model-router/src/router/modelRegistry.ts
 ```
 
 Use:
