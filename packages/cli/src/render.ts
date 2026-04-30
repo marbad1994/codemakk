@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import type { AppState, Suggestion } from "./types.js";
 import { visualRows } from "./terminal.js";
+import { commandStripForPrompt } from "./show.js";
 
 function displayInputValue(value: string): string {
   return value
@@ -48,10 +49,14 @@ export function renderPrompt(args: {
 }): number {
   const { prompt, value, suggestions, selectedSuggestion, state } = args;
 
+  const strip = chalk.gray(commandStripForPrompt(prompt));
+  process.stdout.write(`${strip}
+`);
+
   const firstLine = promptLine(state, prompt, value);
   process.stdout.write(firstLine);
 
-  let renderedLines = visualRows(firstLine) - 1;
+  let renderedLines = visualRows(strip) + visualRows(firstLine) - 1;
 
   if (suggestions.length > 0) {
     process.stdout.write("\n");

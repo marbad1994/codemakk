@@ -1,9 +1,10 @@
-*.bak-create-mode
+*.bak*
 node_modules/
 dist/
 .env
 .env.local
 .DS_Store
+.codemakk
 
 .codemakk/cache/
 .codemakk/sessions/

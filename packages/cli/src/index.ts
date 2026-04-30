@@ -16,6 +16,7 @@ import type { AppState } from "./types.js";
 import { readInteractiveLine } from "./input.js";
 import { printHelp } from "./help.js";
 import { openModeMenu, openSkillsMenu, openSpeedMenu } from "./actions.js";
+import { openModelRegistryMenu } from "./modelRegistry.js";
 import { openConfigMenu, setConfigValue } from "./configManager.js";
 import { printStats } from "./stats.js";
 import {
@@ -36,6 +37,7 @@ import {
 } from "./proposals.js";
 import { openReviewQueue, printProposalList } from "./review.js";
 import { loadSessionState, saveSessionState, sessionPath } from "./session.js";
+import { printMainShow } from "./show.js";
 import {
   handleBuildCommand,
   handleDesignCommand,
@@ -191,7 +193,7 @@ async function main(): Promise<void> {
   console.log(chalk.gray(explainer));
   console.log("");
   console.log(
-    `${chalk.gray("Type")} ${chalk.cyan("/help")} ${chalk.gray("for commands. Type")} ${chalk.cyan("/")} ${chalk.gray("for commands or")} ${chalk.yellow("@")} ${chalk.gray("for files.")}`
+    `${chalk.gray("Type")} ${chalk.cyan("/show")} ${chalk.gray("for workflow commands, ")} ${chalk.cyan("/help")} ${chalk.gray("for all commands, or ")} ${chalk.yellow("@")} ${chalk.gray("for files.")}`
   );
   console.log("");
 
@@ -221,8 +223,18 @@ async function main(): Promise<void> {
       continue;
     }
 
+    if (lineWithoutMentions === "/show") {
+      printMainShow();
+      continue;
+    }
+
     if (lineWithoutMentions === "/config") {
       await openConfigMenu();
+      continue;
+    }
+
+    if (lineWithoutMentions === "/models") {
+      await openModelRegistryMenu();
       continue;
     }
 

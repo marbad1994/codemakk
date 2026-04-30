@@ -8,10 +8,22 @@ export const commands: CommandDefinition[] = [
     group: "General"
   },
   {
+    name: "/show",
+    usage: "/show",
+    description: "Show contextual command reminders",
+    group: "General"
+  },
+  {
     name: "/config",
     usage: "/config",
     description: "View/edit codemakk environment config",
     group: "General"
+  },
+  {
+    name: "/mode",
+    usage: "/mode",
+    description: "Select routing mode",
+    group: "Routing"
   },
   {
     name: "/model",
@@ -20,9 +32,9 @@ export const commands: CommandDefinition[] = [
     group: "Routing"
   },
   {
-    name: "/mode",
-    usage: "/mode",
-    description: "Select routing mode",
+    name: "/models",
+    usage: "/models",
+    description: "Open router model registry manager",
     group: "Routing"
   },
   {
@@ -78,6 +90,24 @@ export const commands: CommandDefinition[] = [
     usage: "/open <id> [mockup]",
     description: "Open project mockup in browser",
     group: "Projects"
+  },
+  {
+    name: "/done",
+    usage: "/done",
+    description: "Finish planning mode and save the project plan",
+    group: "Workflow"
+  },
+  {
+    name: "/approve",
+    usage: "/approve",
+    description: "Approve design mode and save design/mockups",
+    group: "Workflow"
+  },
+  {
+    name: "/cancel",
+    usage: "/cancel",
+    description: "Leave the current workflow submode",
+    group: "Workflow"
   },
   {
     name: "/create",

@@ -11,6 +11,7 @@ import {
   routerBaseUrl
 } from "./config.js";
 import { selectMenu } from "./menus.js";
+import { openModelRegistryMenu } from "./modelRegistry.js";
 
 type ConfigItem = {
   key: string;
@@ -21,6 +22,12 @@ type ConfigItem = {
 
 function currentConfig(): ConfigItem[] {
   return [
+    {
+      key: "__MODEL_REGISTRY__",
+      label: "Model registry",
+      value: "open",
+      description: "Enable/disable router models"
+    },
     {
       key: "CODEMAKK_ROUTER_BASE_URL",
       label: "Router base URL",
@@ -57,6 +64,14 @@ function currentConfig(): ConfigItem[] {
       value:
         process.env.CODEMAKK_DEFAULT_LOCAL_PREFERENCE ?? String(defaultLocalPreference),
       description: "Prefer local/free models"
+    },
+    {
+      key: "CODEMAKK_ROUTER_REGISTRY_PATH",
+      label: "Router model registry",
+      value:
+        process.env.CODEMAKK_ROUTER_REGISTRY_PATH ??
+        "../cline-model-router/src/router/modelRegistry.ts",
+      description: "Path to router model registry file"
     },
     {
       key: "CODEMAKK_MODEL_RUN_LEDGER_PATH",
@@ -163,6 +178,11 @@ export async function openConfigMenu(): Promise<void> {
   });
 
   if (!selected) {
+    return;
+  }
+
+  if (selected.key === "__MODEL_REGISTRY__") {
+    await openModelRegistryMenu();
     return;
   }
 

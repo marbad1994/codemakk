@@ -4,6 +4,7 @@ import type { AppState } from "./types.js";
 import { readInteractiveLine } from "./input.js";
 import { renderMarkdown } from "./markdown.js";
 import { setProposalsFromModelOutput } from "./proposals.js";
+import { printDesignShow, printPlanningShow } from "./show.js";
 import { saveSessionState } from "./session.js";
 import {
   appendProjectHistory,
@@ -74,8 +75,10 @@ function systemDesignPrompt(project: ProjectRecord, planMd: string, planJson: st
     `Project id: ${project.id}`,
     "Discuss UX and visual structure with the user.",
     "Mockups must be standalone HTML documents with embedded <style> blocks and reusable class-based CSS.",
-    "Do not use inline style attributes.",
-    "Do not use external network assets, CDNs, remote fonts, or images.",
+    "Use a <style> block in the HTML head. Use classes. Do not use inline style= attributes.",
+    "Do not use external network assets, CDNs, remote fonts, remote images, or external scripts.",
+    "Do not ask where to save mockups. Codemakk saves them automatically.",
+    "Mockup paths must be mockups/current/<name>.html.",
     "Use semantic HTML and readable class names.",
     "Do not generate application source files in design mode.",
     "When approved, produce design artifacts and HTML mockups.",
@@ -134,12 +137,15 @@ function designFinalizationPrompt(
       content: [
         "You are finalizing Codemakk design artifacts.",
         "Return ONLY labeled fenced blocks.",
+        "Do not ask where to save mockups. Codemakk saves them automatically.",
+        "Do not say that files were saved.",
         "Required blocks: DESIGN_MD, DESIGN_JSON, and at least one MOCKUP_FILE block.",
         "DESIGN_JSON must be valid JSON.",
         "Mockup files must be standalone HTML with embedded <style> blocks and class-based CSS.",
-        "Do not use inline style attributes.",
-        "Do not use external assets, CDNs, remote images, or remote fonts.",
+        "Use CSS classes inside the <style> block. Do not use inline style= attributes.",
+        "Do not use external assets, CDNs, remote images, remote fonts, or external scripts.",
         "Mockup paths must be relative under mockups/current/ and end in .html.",
+        "Use mockups/current/index.html for the main/default mockup.",
         "No prose outside the labeled blocks.",
         "",
         "Required format:",
@@ -180,13 +186,13 @@ function designFinalizationPrompt(
 }
 
 function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
 }
 
 function blockRegex(label: string): RegExp {
+  const fence = "```";
   return new RegExp(
-    `${escapeRegExp(label)}\\s*\\n` +
-      "```[A-Za-z0-9_-]*\\n([\\s\\S]*?)\\n```",
+    `${escapeRegExp(label)}\s*\n${fence}[A-Za-z0-9_-]*\n([\s\S]*?)\n${fence}`,
     "m"
   );
 }
@@ -229,14 +235,13 @@ function parseArtifacts(output: string): ArtifactBlocks {
 }
 
 function planningHelp(project: ProjectRecord): void {
-  console.log(chalk.bold.cyan(`Planning mode for project ${project.id}`));
-  console.log(chalk.gray("Discuss the project. Commands: /done, /cancel, /show"));
-  console.log("");
+  printPlanningShow(project.id);
 }
 
 function designHelp(project: ProjectRecord): void {
-  console.log(chalk.bold.cyan(`Design mode for project ${project.id}`));
-  console.log(chalk.gray("Discuss UX/mockups. Commands: /approve, /open [n], /cancel, /show"));
+  printDesignShow(project.id);
+  console.log(chalk.gray(`Mockups save automatically under .codemakk/projects/${project.id}/mockups/current/`));
+  console.log(chalk.gray(`Open the first mockup later with /open ${project.id}`));
   console.log("");
 }
 
@@ -314,7 +319,7 @@ async function runPlanningMode(
     }
 
     if (line === "/show") {
-      await printProject(project.id);
+      printPlanningShow(project.id);
       continue;
     }
 
@@ -343,6 +348,7 @@ async function runPlanningMode(
       });
 
       console.log(`${chalk.green("Saved approved plan for project")} ${chalk.yellow(project.id)}`);
+      console.log(chalk.gray(`Next: /design ${project.id}`));
       return;
     }
 
@@ -415,7 +421,7 @@ async function runDesignMode(
     }
 
     if (line === "/show") {
-      await printProject(project.id);
+      printDesignShow(project.id);
       continue;
     }
 
@@ -458,9 +464,11 @@ async function runDesignMode(
         mockups.forEach((mockup, index) => {
           console.log(`  ${chalk.yellow(String(index + 1).padStart(2))}. ${chalk.white(mockup)}`);
         });
-        console.log(chalk.gray(`Use /open ${project.id} 1 to open the first mockup.`));
+        console.log(chalk.gray(`Use /open ${project.id} to open the first mockup.`));
       }
 
+      console.log(chalk.gray(`Next: /open ${project.id}`));
+      console.log(chalk.gray(`Then: /build ${project.id} scaffold`));
       return;
     }
 
@@ -587,7 +595,9 @@ export async function handleBuildCommand(args: {
   const proposalCount = await setProposalsFromModelOutput(args.state, output);
 
   if (proposalCount > 0) {
-    console.log(chalk.gray(`Detected ${proposalCount} proposal(s). Use /review.`));
+    console.log(chalk.gray(`Detected ${proposalCount} proposal(s).`));
+    console.log(chalk.gray("Next: /review"));
+    console.log(chalk.gray("Then: /apply after accepting proposals"));
     await saveSessionState(args.state);
   }
 }

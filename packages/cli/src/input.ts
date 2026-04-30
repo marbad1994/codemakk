@@ -23,8 +23,13 @@ const KEY = {
 
 const immediateCommands = new Set([
   "/help",
+  "/cancel",
+  "/approve",
+  "/done",
+  "/show",
   "/config",
   "/mode",
+  "/models",
   "/speed",
   "/skills",
   "/context",
