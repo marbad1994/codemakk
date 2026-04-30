@@ -28,14 +28,11 @@ import {
 } from "./context.js";
 import { renderMarkdown } from "./markdown.js";
 import {
-  applyAcceptedProposals,
-  buildRevisionPrompt,
-  commentOnProposal,
-  proposalSummary,
-  setProposalsFromModelOutput
-} from "./proposals.js";
-import { openReviewQueue, printProposalList } from "./review.js";
-import { loadSessionState, saveSessionState, sessionPath } from "./session.js";
+  applyPendingEdits,
+  createFilesFromModelOutput,
+  printPendingDiff,
+  stageEditsFromModelOutput
+} from "./edits.js";
 
 async function streamResponse(args: {
   client: RouterClient;
@@ -109,35 +106,6 @@ async function streamResponse(args: {
   };
 }
 
-function strictFileOutputInstruction(createMode: boolean): string {
-  const lines = [
-    "CODEMAKK FILE OUTPUT RULES:",
-    "When the user asks you to create, modify, rewrite, patch, fix, or update files, you MUST return file blocks only.",
-    "Do not include explanations, apologies, alternatives, analysis, markdown headings, or prose outside file blocks.",
-    "Do not show multiple versions of the same file. Return only the final version.",
-    "Do not say 'I will', 'Here is', 'Let me correct', or 'Wait'.",
-    "Do not use placeholders.",
-    "Every file block MUST use exactly this format:",
-    "",
-    "File: relative/path/from/project/root.ext",
-    "```lang",
-    "full final file contents",
-    "```",
-    "",
-    "Paths must be relative. Never use absolute paths. Never use ../.",
-    "If modifying a file, return the entire final file, not a snippet.",
-    "If creating multiple files, return each file once.",
-    "If you cannot comply exactly, return no file blocks."
-  ];
-
-  if (createMode) {
-    lines.unshift("You are in codemakk create/review mode.");
-    lines.push("In create/review mode, output ONLY file blocks and nothing else.");
-  }
-
-  return lines.join("\n");
-}
-
 async function main(): Promise<void> {
   const client = new RouterClient(routerBaseUrl, apiKey);
 
@@ -149,21 +117,9 @@ async function main(): Promise<void> {
     contextFiles: [],
     skill: null,
     pendingEdits: [],
-    proposals: [],
     lastResponseText: "",
     createMode: false
   };
-
-  const restoredSession = await loadSessionState(state);
-
-  if (restoredSession && state.proposals.length > 0) {
-    console.log(
-      chalk.yellow(
-        `Recovered ${state.proposals.length} proposal(s) from ${sessionPath()}. Use /review to continue.`
-      )
-    );
-    console.log("");
-  }
 
   const banner = `
 ╭──────────────────────────────────────────────────────────────────────╮
@@ -198,11 +154,9 @@ async function main(): Promise<void> {
 
     if (mentionedFiles.length > 0) {
       addContextFiles(state, mentionedFiles);
-      await saveSessionState(state);
     }
 
     const lineWithoutMentions = stripFileMentions(line);
-    let lineWithoutMentionsForPrompt = lineWithoutMentions;
 
     if (lineWithoutMentions === "/exit" || lineWithoutMentions === "/quit") {
       break;
@@ -262,15 +216,18 @@ async function main(): Promise<void> {
       const target = lineWithoutMentions.slice("/remove ".length).trim();
 
       state.contextFiles = state.contextFiles.filter((file) => file !== target);
-      await saveSessionState(state);
       printContext(state.contextFiles);
       continue;
     }
 
     if (lineWithoutMentions === "/clear") {
       state.contextFiles = [];
-      await saveSessionState(state);
       console.log(chalk.gray("Context cleared."));
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/session")) {
+      console.log(chalk.yellow("Sessions are not implemented yet."));
       continue;
     }
 
@@ -301,63 +258,47 @@ async function main(): Promise<void> {
 
     if (lineWithoutMentions === "/create") {
       state.createMode = true;
-      await saveSessionState(state);
       console.log(chalk.green("Create mode enabled for the next prompt."));
-      console.log(chalk.gray("Every file proposal in the next response will enter review mode."));
+      console.log(
+        chalk.gray(
+          "Every File: ... code block in the next response will be created, with .old backups for existing files."
+        )
+      );
       continue;
-    }
-
-    if (lineWithoutMentions === "/proposals") {
-      printProposalList(state);
-      continue;
-    }
-
-    if (lineWithoutMentions === "/review") {
-      await openReviewQueue(state);
-      continue;
-    }
-
-    if (lineWithoutMentions.startsWith("/comment ")) {
-      const rest = lineWithoutMentions.slice("/comment ".length).trim();
-      const match = rest.match(/^(\d+)\s+([\s\S]+)$/);
-
-      if (!match) {
-        console.log(chalk.yellow("Usage: /comment <proposal-number> <comment>"));
-        continue;
-      }
-
-      await commentOnProposal(state, Number(match[1]) - 1, match[2]);
-      continue;
-    }
-
-    if (lineWithoutMentions === "/revise") {
-      const revisionPrompt = buildRevisionPrompt(state);
-
-      if (!revisionPrompt) {
-        console.log(chalk.gray("No proposals marked for revision. Use /review and press c, or /comment <n> <comment>."));
-        continue;
-      }
-
-      lineWithoutMentionsForPrompt = revisionPrompt;
     }
 
     if (lineWithoutMentions === "/diff") {
-      console.log(chalk.gray("Diff view moved into /review. Press 1 for diff, 2 original, 3 proposal, 4 side-by-side."));
-      await openReviewQueue(state);
+      printPendingDiff(state);
       continue;
     }
 
     if (lineWithoutMentions === "/apply") {
-      await applyAcceptedProposals(state);
+      await applyPendingEdits(state);
       continue;
     }
 
-    const rawPrompt = lineWithoutMentionsForPrompt.startsWith("/ask ")
-      ? lineWithoutMentionsForPrompt.slice("/ask ".length).trim()
-      : lineWithoutMentionsForPrompt;
+    const rawPrompt = lineWithoutMentions.startsWith("/ask ")
+      ? lineWithoutMentions.slice("/ask ".length).trim()
+      : lineWithoutMentions;
+
+    const createModeInstruction = state.createMode
+      ? [
+          "You are in create-files mode.",
+          "Return every file using this exact format:",
+          "",
+          "File: path/to/file.ext",
+          "```lang",
+          "full file contents",
+          "```",
+          "",
+          "Do not omit files.",
+          "Do not use placeholders.",
+          "Do not say that files were created; only output the file blocks."
+        ].join("\n")
+      : "";
 
     const prompt = await buildPromptWithContext(
-      `${strictFileOutputInstruction(state.createMode)}\n\n${rawPrompt}`,
+      createModeInstruction ? `${createModeInstruction}\n\n${rawPrompt}` : rawPrompt,
       state
     );
 
@@ -379,21 +320,17 @@ async function main(): Promise<void> {
       console.log(renderMarkdown(result.text));
       console.log("");
 
-      const proposalCount = await setProposalsFromModelOutput(state, result.text);
-
-      if (proposalCount > 0) {
-        console.log(chalk.gray(proposalSummary(state)));
-        console.log(chalk.gray("Use /review to inspect proposals. /apply writes only accepted files."));
+      if (state.createMode) {
+        await createFilesFromModelOutput(result.text);
+        state.createMode = false;
+      } else {
+        await stageEditsFromModelOutput(state, result.text);
       }
-
-      state.createMode = false;
-      await saveSessionState(state);
     }
 
     if (result.interrupted) {
       state.createMode = false;
-      await saveSessionState(state);
-      console.log(chalk.yellow("Response was interrupted. Create/review flow cancelled."));
+      console.log(chalk.yellow("Response was interrupted. Create mode cancelled."));
       console.log("");
     }
   }

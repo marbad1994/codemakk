@@ -26,24 +26,6 @@ export type FileSuggestion = {
 
 export type Suggestion = CommandSuggestion | FileSuggestion;
 
-export type ProposalStatus =
-  | "pending"
-  | "accepted"
-  | "discarded"
-  | "needs_revision";
-
-export type FileProposal = {
-  id: string;
-  path: string;
-  absolutePath: string;
-  content: string;
-  oldContent: string | null;
-  exists: boolean;
-  status: ProposalStatus;
-  comment?: string;
-  source?: string;
-};
-
 export type PendingEdit = {
   path: string;
   absolutePath: string;
@@ -60,7 +42,6 @@ export type AppState = {
   contextFiles: string[];
   skill: Skill | null;
   pendingEdits: PendingEdit[];
-  proposals: FileProposal[];
   lastResponseText: string;
   createMode: boolean;
 };

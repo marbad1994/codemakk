@@ -20,11 +20,9 @@ export function statePrefix(state: AppState): string {
     chalk.magenta(state.model),
     chalk.gray(" files:"),
     chalk.yellow(String(state.contextFiles.length)),
-    state.skill
-      ? `${chalk.gray(" skill:")}${chalk.green(state.skill.name)}`
-      : "",
-    state.proposals.length > 0
-      ? `${chalk.gray(" proposals:")}${chalk.yellow(String(state.proposals.length))}`
+    state.skill ? `${chalk.gray(" skill:")}${chalk.green(state.skill.name)}` : "",
+    state.pendingEdits.length > 0
+      ? `${chalk.gray(" edits:")}${chalk.yellow(String(state.pendingEdits.length))}`
       : "",
     chalk.gray("]")
   ].join("");
@@ -71,9 +69,7 @@ export function renderPrompt(args: {
           lastGroup = group;
         }
 
-        const marker = selected
-          ? chalk.black.bgCyan(" › ")
-          : chalk.gray("   ");
+        const marker = selected ? chalk.black.bgCyan(" › ") : chalk.gray("   ");
 
         const usage = selected
           ? chalk.cyanBright.bold(suggestion.command.usage.padEnd(36))
@@ -92,13 +88,9 @@ export function renderPrompt(args: {
         lastGroup = "Files";
       }
 
-      const marker = selected
-        ? chalk.black.bgCyan(" › ")
-        : chalk.gray("   ");
+      const marker = selected ? chalk.black.bgCyan(" › ") : chalk.gray("   ");
 
-      const icon = suggestion.isDirectory
-        ? chalk.blue("dir ")
-        : chalk.green("file");
+      const icon = suggestion.isDirectory ? chalk.blue("dir ") : chalk.green("file");
 
       const filePath = suggestion.isDirectory
         ? chalk.blueBright(suggestion.filePath)

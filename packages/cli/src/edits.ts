@@ -15,13 +15,30 @@ function normalizeModelPath(filePath: string): string {
     .replace(/^["']|["']$/g, "")
     .replace(/^\.?\//, "");
 }
+function extractSingleCodeBlockContent(output: string): string | null {
+  const trimmed = output.trim();
 
+  const match = trimmed.match(/^```[A-Za-z0-9_-]*\n([\s\S]*?)\n```$/);
+
+  if (!match || match[1] === undefined) {
+    return null;
+  }
+
+  return match[1].trimEnd() + "\n";
+}
 function parseFullFileBlocks(output: string): ParsedFileBlock[] {
   const blocks: ParsedFileBlock[] = [];
 
-  const regex = /(?:^|\n)File:\s*([^\n]+)\n```[A-Za-z0-9_-]*\n([\s\S]*?)\n```/g;
+  // Supported format 1:
+  //
+  // File: path/to/file.ext
+  // ```lang
+  // full file contents
+  // ```
+  const fileLineRegex =
+    /(?:^|\n)File:\s*`?([^`\n]+?)`?\s*\n```[A-Za-z0-9_-]*\n([\s\S]*?)\n```/g;
 
-  for (const match of output.matchAll(regex)) {
+  for (const match of output.matchAll(fileLineRegex)) {
     const rawPath = match[1];
     const content = match[2];
 
@@ -34,10 +51,68 @@ function parseFullFileBlocks(output: string): ParsedFileBlock[] {
       content
     });
   }
+  // Supported format 2:
+  //
+  // ```lang:path/to/file.ext
+  // full file contents
+  // ```
+  //
+  // Some models, especially Qwen-style coding models, return this format.
+  const fencedPathRegex = /(?:^|\n)```([A-Za-z0-9_-]+):([^\n]+)\n([\s\S]*?)\n```/g;
+
+  for (const match of output.matchAll(fencedPathRegex)) {
+    const rawPath = match[2];
+    const content = match[3];
+
+    if (!rawPath || content === undefined) {
+      continue;
+    }
+
+    const normalizedPath = normalizeModelPath(rawPath);
+
+    if (blocks.some((block) => block.path === normalizedPath)) {
+      continue;
+    }
+
+    blocks.push({
+      path: normalizedPath,
+      content
+    });
+  }
 
   return blocks;
 }
 
+function looksLikeBareCode(output: string): boolean {
+  const trimmed = output.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (trimmed.includes("```")) {
+    return false;
+  }
+
+  if (/^File:\s+/m.test(trimmed)) {
+    return false;
+  }
+
+  const codeSignals = [
+    /^import\s+/m,
+    /^from\s+\S+\s+import\s+/m,
+    /^def\s+\w+/m,
+    /^class\s+\w+/m,
+    /^if\s+__name__\s*==\s*["']__main__["']/m,
+    /^const\s+/m,
+    /^let\s+/m,
+    /^export\s+/m,
+    /^function\s+/m,
+    /^#!/m
+  ];
+
+  return codeSignals.some((regex) => regex.test(trimmed));
+}
 function assertSafeRelativePath(relativePath: string): void {
   if (!relativePath) {
     throw new Error("Refusing empty file path.");
@@ -103,7 +178,34 @@ export async function stageEditsFromModelOutput(
 ): Promise<void> {
   const blocks = parseFullFileBlocks(output);
 
+  const selectedFiles = state.contextFiles.filter((file) => !file.endsWith("/"));
+
+  if (blocks.length === 0 && selectedFiles.length === 1 && output.trim()) {
+    blocks.push({
+      path: selectedFiles[0]!,
+      content: extractSingleCodeBlockContent(output) ?? output.trimEnd() + "\n"
+    });
+  }
+
   if (blocks.length === 0) {
+    console.log("");
+    console.log(chalk.yellow("No file edits detected."));
+
+    if (selectedFiles.length === 0) {
+      console.log(chalk.gray("Tip: select one file with @, then ask for a rewrite."));
+    } else if (selectedFiles.length > 1) {
+      console.log(
+        chalk.gray(
+          "Tip: multiple files are selected, so bare code is ambiguous. Ask the model to use File: path + code block format."
+        )
+      );
+    } else {
+      console.log(
+        chalk.gray("Tip: ask the model to use File: path + code block format.")
+      );
+    }
+
+    console.log("");
     return;
   }
 
@@ -239,4 +341,101 @@ export async function applyPendingEdits(state: AppState): Promise<void> {
   console.log("");
   console.log(chalk.green("Apply complete."));
   console.log("");
+}
+
+async function nextBackupPath(absolutePath: string): Promise<string> {
+  let candidate = `${absolutePath}.old`;
+
+  try {
+    await fs.access(candidate);
+  } catch {
+    return candidate;
+  }
+
+  for (let i = 1; i < 1000; i++) {
+    candidate = `${absolutePath}.old.${i}`;
+
+    try {
+      await fs.access(candidate);
+    } catch {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Could not find available backup path for ${absolutePath}`);
+}
+
+async function writeCreateModeFile(edit: PendingEdit): Promise<void> {
+  const absolutePath = path.resolve(workingDir, edit.path);
+
+  if (absolutePath !== edit.absolutePath) {
+    throw new Error(`Pending edit path changed unexpectedly: ${edit.path}`);
+  }
+
+  if (!isInsideWorkingDir(absolutePath)) {
+    throw new Error(`Refusing write outside working directory: ${edit.path}`);
+  }
+
+  await fs.mkdir(path.dirname(absolutePath), {
+    recursive: true
+  });
+
+  if (edit.exists) {
+    const backupPath = await nextBackupPath(absolutePath);
+    await fs.rename(absolutePath, backupPath);
+
+    console.log(
+      `${chalk.yellow("Existing file moved to")} ${chalk.white(path.relative(workingDir, backupPath))}`
+    );
+  }
+
+  await fs.writeFile(absolutePath, edit.content, "utf8");
+
+  console.log(
+    edit.exists
+      ? `${chalk.green("Created")} ${chalk.white(edit.path)} ${chalk.gray("(existing file backed up)")}`
+      : `${chalk.green("Created")} ${chalk.white(edit.path)}`
+  );
+}
+
+export async function createFilesFromModelOutput(output: string): Promise<number> {
+  const blocks = parseFullFileBlocks(output);
+
+  if (blocks.length === 0) {
+    console.log(chalk.yellow("No createable file blocks found."));
+    console.log(chalk.gray("Expected format:"));
+    console.log(chalk.gray("File: path/to/file.ts"));
+    console.log(chalk.gray("```ts"));
+    console.log(chalk.gray("// full file contents"));
+    console.log(chalk.gray("```"));
+    return 0;
+  }
+
+  const edits: PendingEdit[] = [];
+
+  for (const block of blocks) {
+    try {
+      edits.push(await createPendingEdit(block));
+    } catch (error) {
+      console.log(chalk.red(error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  if (edits.length === 0) {
+    return 0;
+  }
+
+  console.log("");
+
+  for (const edit of edits) {
+    await writeCreateModeFile(edit);
+  }
+
+  console.log("");
+  console.log(
+    `${chalk.green("Created")} ${chalk.yellow(String(edits.length))} ${chalk.green("file(s).")}`
+  );
+  console.log("");
+
+  return edits.length;
 }

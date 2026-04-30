@@ -13,13 +13,12 @@ When editing code:
 
 - Return complete replacement files only.
 - Never use placeholders like “rest unchanged”, “same as before”, or “…”.
-- Use this exact format:
+- You MUST use this exact file format:
+  File: path/to/file.ext
 
-File: path/to/file.ts
-
-```ts
-// full file contents
-```
+  ```lang
+  full file contents
+  ```
 
 - Preserve imports, exports, comments, formatting, and indentation unless the task requires changing them.
 - If multiple files are needed, finish one full file before starting the next.
