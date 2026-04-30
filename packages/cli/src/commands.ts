@@ -44,6 +44,42 @@ export const commands: CommandDefinition[] = [
     group: "Prompt"
   },
   {
+    name: "/projects",
+    usage: "/projects",
+    description: "List codemakk projects",
+    group: "Projects"
+  },
+  {
+    name: "/project",
+    usage: "/project <id>",
+    description: "Show project details",
+    group: "Projects"
+  },
+  {
+    name: "/plan",
+    usage: "/plan new|<id>|list",
+    description: "Plan a project",
+    group: "Projects"
+  },
+  {
+    name: "/design",
+    usage: "/design <id>",
+    description: "Design UX/mockups for a project",
+    group: "Projects"
+  },
+  {
+    name: "/build",
+    usage: "/build <id> [slice]",
+    description: "Build project slice into proposals",
+    group: "Projects"
+  },
+  {
+    name: "/open",
+    usage: "/open <id> [mockup]",
+    description: "Open project mockup in browser",
+    group: "Projects"
+  },
+  {
     name: "/create",
     usage: "/create",
     description: "Enable file-create mode for the next prompt",

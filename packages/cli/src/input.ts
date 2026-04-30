@@ -34,6 +34,7 @@ const immediateCommands = new Set([
   "/stats-model",
   "/stats-recent",
   "/stats-largest",
+  "/projects",
   "/create",
   "/review",
   "/proposals",

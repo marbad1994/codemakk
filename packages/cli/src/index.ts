@@ -36,6 +36,14 @@ import {
 } from "./proposals.js";
 import { openReviewQueue, printProposalList } from "./review.js";
 import { loadSessionState, saveSessionState, sessionPath } from "./session.js";
+import {
+  handleBuildCommand,
+  handleDesignCommand,
+  handleOpenCommand,
+  handlePlanCommand,
+  handleProjectCommand,
+  handleProjectsCommand
+} from "./workflow.js";
 
 async function streamResponse(args: {
   client: RouterClient;
@@ -296,6 +304,48 @@ async function main(): Promise<void> {
 
     if (lineWithoutMentions === "/stats-largest") {
       await printStats("largest");
+      continue;
+    }
+
+    if (lineWithoutMentions === "/projects") {
+      await handleProjectsCommand();
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/project ")) {
+      await handleProjectCommand(lineWithoutMentions.slice("/project ".length).trim());
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/plan")) {
+      await handlePlanCommand({
+        client,
+        state,
+        rawArgs: lineWithoutMentions.slice("/plan".length).trim()
+      });
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/design ")) {
+      await handleDesignCommand({
+        client,
+        state,
+        rawArgs: lineWithoutMentions.slice("/design ".length).trim()
+      });
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/open ")) {
+      await handleOpenCommand(lineWithoutMentions.slice("/open ".length).trim());
+      continue;
+    }
+
+    if (lineWithoutMentions.startsWith("/build ")) {
+      await handleBuildCommand({
+        client,
+        state,
+        rawArgs: lineWithoutMentions.slice("/build ".length).trim()
+      });
       continue;
     }
 
