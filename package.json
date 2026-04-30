@@ -1,0 +1,21 @@
+{
+  "name": "codemakk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/cli",
+    "packages/vscode"
+  ],
+  "scripts": {
+    "build": "npm run build -ws",
+    "dev": "npm run dev -w @codemakk/cli",
+    "typecheck": "tsc -b",
+    "clean": "rm -rf packages/*/dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
