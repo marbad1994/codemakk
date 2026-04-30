@@ -26,6 +26,14 @@ export type FileSuggestion = {
 
 export type Suggestion = CommandSuggestion | FileSuggestion;
 
+export type PendingEdit = {
+  path: string;
+  absolutePath: string;
+  content: string;
+  exists: boolean;
+  oldContent: string | null;
+};
+
 export type AppState = {
   model: string;
   profile: string;
@@ -33,4 +41,5 @@ export type AppState = {
   localPreference: boolean;
   contextFiles: string[];
   skill: Skill | null;
+  pendingEdits: PendingEdit[];
 };

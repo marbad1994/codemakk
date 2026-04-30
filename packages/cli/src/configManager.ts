@@ -55,8 +55,7 @@ function currentConfig(): ConfigItem[] {
       key: "CODEMAKK_DEFAULT_LOCAL_PREFERENCE",
       label: "Local preference",
       value:
-        process.env.CODEMAKK_DEFAULT_LOCAL_PREFERENCE ??
-        String(defaultLocalPreference),
+        process.env.CODEMAKK_DEFAULT_LOCAL_PREFERENCE ?? String(defaultLocalPreference),
       description: "Prefer local/free models"
     },
     {
@@ -102,11 +101,7 @@ export async function setConfigValue(key: string, value: string): Promise<void> 
     nextLines.push(`${key}=${escaped}`);
   }
 
-  await fs.writeFile(
-    envPath,
-    nextLines.join("\n").replace(/\n+$/, "\n"),
-    "utf8"
-  );
+  await fs.writeFile(envPath, nextLines.join("\n").replace(/\n+$/, "\n"), "utf8");
 
   process.env[key] = value;
 }
@@ -155,17 +150,13 @@ export async function openConfigMenu(): Promise<void> {
     title: "Config",
     items: currentConfig(),
     renderItem: (item, selectedItem) => {
-      const marker = selectedItem
-        ? chalk.black.bgCyan(" › ")
-        : chalk.gray("   ");
+      const marker = selectedItem ? chalk.black.bgCyan(" › ") : chalk.gray("   ");
 
       const key = selectedItem
         ? chalk.cyanBright.bold(item.key.padEnd(36))
         : chalk.cyan(item.key.padEnd(36));
 
-      const value = selectedItem
-        ? chalk.whiteBright(item.value)
-        : chalk.gray(item.value);
+      const value = selectedItem ? chalk.whiteBright(item.value) : chalk.gray(item.value);
 
       return `${marker} ${key} ${value}`;
     }

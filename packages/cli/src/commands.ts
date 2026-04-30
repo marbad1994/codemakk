@@ -13,12 +13,12 @@ export const commands: CommandDefinition[] = [
     description: "View/edit codemakk environment config",
     group: "General"
   },
-    {
-  name: "/mode",
-  usage: "/mode",
-  description: "Select routing mode",
-  group: "Routing"
-},
+  {
+    name: "/mode",
+    usage: "/mode",
+    description: "Select routing mode",
+    group: "Routing"
+  },
   {
     name: "/model",
     usage: "/model <model>",

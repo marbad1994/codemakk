@@ -83,19 +83,13 @@ export async function selectMenu<T>(args: {
       }
 
       if (key.name === "up") {
-        selected =
-          selected <= 0
-            ? args.items.length - 1
-            : selected - 1;
+        selected = selected <= 0 ? args.items.length - 1 : selected - 1;
         render();
         return;
       }
 
       if (key.name === "down") {
-        selected =
-          selected >= args.items.length - 1
-            ? 0
-            : selected + 1;
+        selected = selected >= args.items.length - 1 ? 0 : selected + 1;
         render();
       }
     };

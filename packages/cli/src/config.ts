@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 
+export const workingDir = process.cwd();
+
 function findRepoRoot(startDir = process.cwd()): string {
   let current = startDir;
 
@@ -31,7 +33,7 @@ function findRepoRoot(startDir = process.cwd()): string {
 }
 
 export const repoRoot = findRepoRoot();
-export const workingDir = process.cwd();
+
 export const envPath = path.join(repoRoot, ".env");
 
 dotenv.config({
@@ -46,24 +48,36 @@ export function resolveFromRepoRoot(value: string): string {
   return path.resolve(repoRoot, value);
 }
 
+export function resolveFromWorkingDir(value: string): string {
+  if (path.isAbsolute(value)) {
+    return value;
+  }
+
+  return path.resolve(workingDir, value);
+}
+
+export function isInsideWorkingDir(absolutePath: string): boolean {
+  const relative = path.relative(workingDir, absolutePath);
+
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 export function getConfigValue(name: string, fallback: string): string {
   return process.env[name] ?? fallback;
 }
 
-export const routerBaseUrl =
-  getConfigValue("CODEMAKK_ROUTER_BASE_URL", "http://localhost:8787/v1");
+export const routerBaseUrl = getConfigValue(
+  "CODEMAKK_ROUTER_BASE_URL",
+  "http://localhost:8787/v1"
+);
 
-export const apiKey =
-  getConfigValue("CODEMAKK_API_KEY", "dummy");
+export const apiKey = getConfigValue("CODEMAKK_API_KEY", "dummy");
 
-export const defaultModel =
-  getConfigValue("CODEMAKK_DEFAULT_MODEL", "auto-cline");
+export const defaultModel = getConfigValue("CODEMAKK_DEFAULT_MODEL", "auto-cline");
 
-export const defaultProfile =
-  getConfigValue("CODEMAKK_DEFAULT_PROFILE", "balanced");
+export const defaultProfile = getConfigValue("CODEMAKK_DEFAULT_PROFILE", "balanced");
 
-export const defaultSpeed =
-  Number(getConfigValue("CODEMAKK_DEFAULT_SPEED", "5"));
+export const defaultSpeed = Number(getConfigValue("CODEMAKK_DEFAULT_SPEED", "5"));
 
 export const defaultLocalPreference =
   getConfigValue("CODEMAKK_DEFAULT_LOCAL_PREFERENCE", "false") === "true";

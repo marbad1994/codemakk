@@ -5,11 +5,7 @@ export type ChatMessage = {
   content: string;
 };
 
-export type RouterProfile =
-  | "balanced"
-  | "deep"
-  | "fast"
-  | "free-first";
+export type RouterProfile = "balanced" | "deep" | "fast" | "free-first";
 
 export type RouterChatRequest = {
   model: string;

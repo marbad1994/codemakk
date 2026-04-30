@@ -1,8 +1,4 @@
-import type {
-  RouterChatChunk,
-  RouterChatRequest,
-  RouterChatResponse
-} from "./types.js";
+import type { RouterChatChunk, RouterChatRequest, RouterChatResponse } from "./types.js";
 
 export class RouterClient {
   constructor(
@@ -22,7 +18,9 @@ export class RouterClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Router request failed: ${response.status} ${await response.text()}`);
+      throw new Error(
+        `Router request failed: ${response.status} ${await response.text()}`
+      );
     }
 
     const json = await response.json();
@@ -46,7 +44,9 @@ export class RouterClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Router stream failed: ${response.status} ${await response.text()}`);
+      throw new Error(
+        `Router stream failed: ${response.status} ${await response.text()}`
+      );
     }
 
     if (!response.body) {
@@ -71,9 +71,7 @@ export class RouterClient {
       buffer = parts.pop() ?? "";
 
       for (const part of parts) {
-        const line = part
-          .split(/\r?\n/)
-          .find((entry) => entry.startsWith("data:"));
+        const line = part.split(/\r?\n/).find((entry) => entry.startsWith("data:"));
 
         if (!line) {
           continue;
@@ -88,15 +86,15 @@ export class RouterClient {
         const json = JSON.parse(data);
         const content = json.choices?.[0]?.delta?.content ?? "";
 
-if (content) {
-  yield {
-    content,
-    model: json.model,
-    usedModel: json.router?.usedModel ?? json.model,
-    requestedModel: json.router?.requestedModel,
-    raw: json
-  };
-}
+        if (content) {
+          yield {
+            content,
+            model: json.model,
+            usedModel: json.router?.usedModel ?? json.model,
+            requestedModel: json.router?.requestedModel,
+            raw: json
+          };
+        }
       }
     }
   }
@@ -104,7 +102,7 @@ if (content) {
   private headers(request: RouterChatRequest): Record<string, string> {
     return {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${this.apiKey}`,
       "x-router-profile": request.profile ?? "balanced",
       "x-router-speed": String(request.speed ?? 5),
       "x-router-local-preference": String(request.localPreference ?? false)

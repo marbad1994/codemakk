@@ -49,9 +49,7 @@ function renderMarkdownLine(line: string): string {
     chalk.black.bgWhite(` ${code} `)
   );
 
-  rendered = rendered.replace(/\*\*([^*]+)\*\*/g, (_match, bold) =>
-    chalk.bold(bold)
-  );
+  rendered = rendered.replace(/\*\*([^*]+)\*\*/g, (_match, bold) => chalk.bold(bold));
 
   return rendered;
 }

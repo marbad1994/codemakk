@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Skill } from "./types.js";
 
-function parseSkillMarkdown(raw: string): { frontmatter: Record<string, unknown>; instructions: string } {
+function parseSkillMarkdown(raw: string): {
+  frontmatter: Record<string, unknown>;
+  instructions: string;
+} {
   if (!raw.startsWith("---")) return { frontmatter: {}, instructions: raw.trim() };
 
   const end = raw.indexOf("\n---", 3);
@@ -49,8 +52,12 @@ export async function loadSkills(root = process.cwd()): Promise<Skill[]> {
       try {
         const raw = await fs.readFile(skillFile, "utf8");
         const parsed = parseSkillMarkdown(raw);
-        const name = typeof parsed.frontmatter.name === "string" ? parsed.frontmatter.name : entry;
-        const description = typeof parsed.frontmatter.description === "string" ? parsed.frontmatter.description : "No description";
+        const name =
+          typeof parsed.frontmatter.name === "string" ? parsed.frontmatter.name : entry;
+        const description =
+          typeof parsed.frontmatter.description === "string"
+            ? parsed.frontmatter.description
+            : "No description";
 
         skills.push({
           name,

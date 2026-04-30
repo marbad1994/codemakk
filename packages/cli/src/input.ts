@@ -4,7 +4,7 @@ import type { AppState, Suggestion } from "./types.js";
 import { getCommandSuggestions } from "./commands.js";
 import { getFileSuggestions, getAtToken } from "./filePicker.js";
 import { clearLines } from "./terminal.js";
-import { renderPrompt, statePrefix } from "./render.js";
+import { renderPrompt, formatFinalPromptLine } from "./render.js";
 
 const KEY = {
   ENTER_CR: "\r",
@@ -163,9 +163,7 @@ function splitIncomingData(chunk: string): string[] {
     ].filter((index) => index > 0);
 
     const nextSpecial =
-      nextSpecialIndexes.length === 0
-        ? -1
-        : Math.min(...nextSpecialIndexes);
+      nextSpecialIndexes.length === 0 ? -1 : Math.min(...nextSpecialIndexes);
 
     if (nextSpecial === -1) {
       tokens.push(rest);
@@ -286,9 +284,7 @@ export async function readInteractiveLine(
 
               if (commandShouldRunImmediately(suggestion)) {
                 const commandName =
-                  suggestion.type === "command"
-                    ? suggestion.command.name
-                    : value.trim();
+                  suggestion.type === "command" ? suggestion.command.name : value.trim();
 
                 value = commandName;
                 finish(commandName);
@@ -311,9 +307,7 @@ export async function readInteractiveLine(
 
               if (commandShouldRunImmediately(suggestion)) {
                 const commandName =
-                  suggestion.type === "command"
-                    ? suggestion.command.name
-                    : value.trim();
+                  suggestion.type === "command" ? suggestion.command.name : value.trim();
 
                 value = commandName;
                 finish(commandName);
@@ -331,9 +325,7 @@ export async function readInteractiveLine(
           if (token === KEY.UP) {
             if (suggestions.length > 0) {
               selectedSuggestion =
-                selectedSuggestion <= 0
-                  ? suggestions.length - 1
-                  : selectedSuggestion - 1;
+                selectedSuggestion <= 0 ? suggestions.length - 1 : selectedSuggestion - 1;
 
               await rerender();
             }
@@ -344,9 +336,7 @@ export async function readInteractiveLine(
           if (token === KEY.DOWN) {
             if (suggestions.length > 0) {
               selectedSuggestion =
-                selectedSuggestion >= suggestions.length - 1
-                  ? 0
-                  : selectedSuggestion + 1;
+                selectedSuggestion >= suggestions.length - 1 ? 0 : selectedSuggestion + 1;
 
               await rerender();
             }
@@ -390,12 +380,8 @@ export async function readInteractiveLine(
       }
 
       clearLines(renderedSuggestionLines);
-const displayValue = value
-  .replace(/\r\n/g, "\n")
-  .replace(/\r/g, "\n")
-  .replace(/\n/g, chalk.gray(" ⏎ "));
-
-output.write(`${statePrefix(state)} ${chalk.green(prompt)}${displayValue}`);    }
+      output.write(formatFinalPromptLine(state, prompt, value));
+    }
 
     input.on("data", onData);
   });

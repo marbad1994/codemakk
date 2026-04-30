@@ -3,12 +3,7 @@ import path from "node:path";
 import YAML from "yaml";
 import type { Skill, SkillFrontmatter } from "./types.js";
 
-const DEFAULT_SKILL_DIRS = [
-  "skills",
-  ".skills",
-  ".claude/skills",
-  ".agents/skills"
-];
+const DEFAULT_SKILL_DIRS = ["skills", ".skills", ".claude/skills", ".agents/skills"];
 
 function parseSkillMarkdown(raw: string): {
   frontmatter: SkillFrontmatter;

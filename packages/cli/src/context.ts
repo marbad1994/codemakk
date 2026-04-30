@@ -4,6 +4,7 @@ import chalk from "chalk";
 import type { AppState } from "./types.js";
 import { estimateTokens } from "./tokenEstimator.js";
 import { workingDir } from "./config.js";
+
 export function extractMentionedFiles(value: string): string[] {
   const matches = value.matchAll(/@([^\s]+)/g);
 
@@ -13,7 +14,10 @@ export function extractMentionedFiles(value: string): string[] {
 }
 
 export function stripFileMentions(value: string): string {
-  return value.replace(/@([^\s]+)/g, "").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/@([^\s]+)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function addContextFiles(state: AppState, files: string[]): void {
@@ -25,15 +29,10 @@ export function addContextFiles(state: AppState, files: string[]): void {
 }
 
 async function fileContentBlock(filePath: string): Promise<string> {
-const absolute = path.resolve(workingDir, filePath);
- const content = await fs.readFile(absolute, "utf8");
+  const absolute = path.resolve(workingDir, filePath);
+  const content = await fs.readFile(absolute, "utf8");
 
-  return [
-    `File: ${filePath}`,
-    "```",
-    content,
-    "```"
-  ].join("\n");
+  return [`File: ${filePath}`, "```", content, "```"].join("\n");
 }
 
 export async function buildPromptWithContext(
@@ -44,11 +43,7 @@ export async function buildPromptWithContext(
 
   if (state.skill) {
     sections.push(
-      [
-        `Active skill: ${state.skill.name}`,
-        "",
-        state.skill.instructions
-      ].join("\n")
+      [`Active skill: ${state.skill.name}`, "", state.skill.instructions].join("\n")
     );
   }
 
@@ -69,13 +64,7 @@ export async function buildPromptWithContext(
       }
     }
 
-    sections.push(
-      [
-        "Selected context files:",
-        "",
-        fileBlocks.join("\n\n")
-      ].join("\n")
-    );
+    sections.push(["Selected context files:", "", fileBlocks.join("\n\n")].join("\n"));
   }
 
   return sections.join("\n\n");
@@ -115,15 +104,20 @@ export async function countContext(state: AppState): Promise<void> {
     }
 
     try {
-      const content = await fs.readFile(path.resolve(workingDir, file), "utf8");      const tokens = estimateTokens(content);
+      const content = await fs.readFile(path.resolve(workingDir, file), "utf8");
+      const tokens = estimateTokens(content);
       total += tokens;
-      console.log(`${chalk.white(file)}: ${chalk.yellow(String(tokens))} tokens estimated`);
+      console.log(
+        `${chalk.white(file)}: ${chalk.yellow(String(tokens))} tokens estimated`
+      );
     } catch {
       console.log(`${chalk.white(file)}: ${chalk.red("could not read")}`);
     }
   }
 
   console.log("");
-  console.log(`${chalk.gray("Total estimated context tokens:")} ${chalk.yellow(String(total))}`);
+  console.log(
+    `${chalk.gray("Total estimated context tokens:")} ${chalk.yellow(String(total))}`
+  );
   console.log("");
 }

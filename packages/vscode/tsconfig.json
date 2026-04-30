@@ -1,7 +1,5 @@
 {
-  "references": [
-    { "path": "../core" }
-  ],
+  "references": [{ "path": "../core" }],
   "compilerOptions": {
     "composite": true,
     "target": "ES2022",

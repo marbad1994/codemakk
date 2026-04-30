@@ -15,7 +15,7 @@ import {
 import type { AppState } from "./types.js";
 import { readInteractiveLine } from "./input.js";
 import { printHelp } from "./help.js";
-import { openSkillsMenu, openSpeedMenu, openModeMenu } from "./actions.js";
+import { openModeMenu, openSkillsMenu, openSpeedMenu } from "./actions.js";
 import { openConfigMenu, setConfigValue } from "./configManager.js";
 import { printStats } from "./stats.js";
 import {
@@ -27,6 +27,11 @@ import {
   stripFileMentions
 } from "./context.js";
 import { renderMarkdown } from "./markdown.js";
+import {
+  applyPendingEdits,
+  printPendingDiff,
+  stageEditsFromModelOutput
+} from "./edits.js";
 
 async function streamResponse(args: {
   client: RouterClient;
@@ -109,26 +114,11 @@ async function main(): Promise<void> {
     speed: defaultSpeed,
     localPreference: defaultLocalPreference,
     contextFiles: [],
-    skill: null
+    skill: null,
+    pendingEdits: []
   };
 
-const banner = `
-╭──────────────────────────────────────────────────────────────────────╮
-│  ██████╗ ██████╗ ██████╗ ███████╗███╗   ███╗ █████╗ ██╗  ██╗██╗  ██╗ │
-│ ██╔════╝██╔═══██╗██╔══██╗██╔════╝████╗ ████║██╔══██╗██║ ██╔╝██║ ██╔╝ │
-│ ██║     ██║   ██║██║  ██║█████╗  ██╔████╔██║███████║█████╔╝ █████╔╝  │
-│ ██║     ██║   ██║██║  ██║██╔══╝  ██║╚██╔╝██║██╔══██║██╔═██╗ ██╔═██╗  │
-│ ╚██████╗╚██████╔╝██████╔╝███████╗██║ ╚═╝ ██║██║  ██║██║  ██╗██║  ██╗ │
-│  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ │
-╰──────────────────────────────────────────────────────────────────────╯
-`;
-  console.log(chalk.bold.cyan(banner));
-  console.log(chalk.bold.cyan("Welcome to codemakk CLI!"));
-  const version = process.env.npm_package_version ?? "unknown";
-  console.log(chalk.gray(`Version: ${version}`));
-  const explainer = `This CLI allows you to interact with codemakk, a code assistant that can help you with various coding tasks.\nYou can ask questions, get explanations, generate code snippets, and more.\nThe CLI supports context files, which can provide additional information to the assistant.\nYou can also configure the model, profile, and speed of the assistant to suit your needs.`;
-  console.log(chalk.gray(explainer));
-  console.log("");
+  console.log(chalk.bold.cyan("codemakk"));
   console.log(
     `${chalk.gray("Type")} ${chalk.cyan("/help")} ${chalk.gray("for commands. Type")} ${chalk.cyan("/")} ${chalk.gray("for commands or")} ${chalk.yellow("@")} ${chalk.gray("for files.")}`
   );
@@ -164,9 +154,9 @@ const banner = `
     }
 
     if (lineWithoutMentions === "/mode") {
-        await openModeMenu(state);
-        continue;
-      }
+      await openModeMenu(state);
+      continue;
+    }
 
     if (lineWithoutMentions.startsWith("/model ")) {
       state.model = lineWithoutMentions.slice("/model ".length).trim();
@@ -183,7 +173,7 @@ const banner = `
       await setConfigValue("CODEMAKK_DEFAULT_PROFILE", state.profile);
 
       console.log(
-        `${chalk.gray("Profile:")} ${chalk.cyan(state.profile)} ${chalk.gray("(saved)")}`
+        `${chalk.gray("Mode:")} ${chalk.cyan(state.profile)} ${chalk.gray("(saved)")}`
       );
       continue;
     }
@@ -248,12 +238,12 @@ const banner = `
     }
 
     if (lineWithoutMentions === "/diff") {
-      console.log(chalk.yellow("Diff preview is not implemented yet."));
+      printPendingDiff(state);
       continue;
     }
 
     if (lineWithoutMentions === "/apply") {
-      console.log(chalk.yellow("Apply is not implemented yet."));
+      await applyPendingEdits(state);
       continue;
     }
 
@@ -265,7 +255,7 @@ const banner = `
 
     process.stdout.write(
       chalk.gray("\nStreaming response... ") +
-        chalk.yellow("press q to interrupt") +
+        chalk.yellow("\npress q to interrupt") +
         chalk.gray("\n\n")
     );
 
@@ -278,6 +268,8 @@ const banner = `
     if (result.text.trim()) {
       console.log(renderMarkdown(result.text));
       console.log("");
+
+      await stageEditsFromModelOutput(state, result.text);
     }
 
     if (result.interrupted) {

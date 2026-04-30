@@ -117,25 +117,23 @@ function aggregateByModel(records: ModelRunRecord[]): ModelAggregate[] {
     const inputTokens = n(usage.inputTokens);
     const outputTokens = n(usage.outputTokens);
 
-    const existing =
-      map.get(modelKey) ??
-      {
-        modelKey,
-        runs: 0,
-        success: 0,
-        failed: 0,
-        rejected: 0,
-        suspicious: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        cachedInputTokens: 0,
-        reasoningOutputTokens: 0,
-        estimatedTokens: 0,
-        realTokens: 0,
-        latencyMs: 0,
-        maxInputTokens: 0
-      };
+    const existing = map.get(modelKey) ?? {
+      modelKey,
+      runs: 0,
+      success: 0,
+      failed: 0,
+      rejected: 0,
+      suspicious: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      cachedInputTokens: 0,
+      reasoningOutputTokens: 0,
+      estimatedTokens: 0,
+      realTokens: 0,
+      latencyMs: 0,
+      maxInputTokens: 0
+    };
 
     existing.runs += 1;
     existing.inputTokens += inputTokens;
@@ -208,21 +206,37 @@ function printOverview(records: ModelRunRecord[]): void {
   console.log("");
 
   console.log(`${chalk.gray("Runs:")} ${chalk.white(formatNumber(records.length))}`);
-  console.log(`${chalk.green("Success:")} ${formatNumber(success)}  ${chalk.red("Failed:")} ${formatNumber(failed)}  ${chalk.yellow("Rejected:")} ${formatNumber(rejected)}  ${chalk.magenta("Suspicious:")} ${formatNumber(suspicious)}`);
+  console.log(
+    `${chalk.green("Success:")} ${formatNumber(success)}  ${chalk.red("Failed:")} ${formatNumber(failed)}  ${chalk.yellow("Rejected:")} ${formatNumber(rejected)}  ${chalk.magenta("Suspicious:")} ${formatNumber(suspicious)}`
+  );
   console.log(`${chalk.gray("Avg latency:")} ${chalk.white(formatMs(avgLatency))}`);
   console.log("");
 
-  console.log(`${chalk.gray("Input tokens:")} ${chalk.yellow(formatNumber(inputTokens))}`);
-  console.log(`${chalk.gray("Output tokens:")} ${chalk.yellow(formatNumber(outputTokens))}`);
-  console.log(`${chalk.gray("Total tokens:")} ${chalk.yellow(formatNumber(totalTokens))}`);
-  console.log(`${chalk.gray("Cached input:")} ${chalk.green(formatNumber(cachedInputTokens))}`);
+  console.log(
+    `${chalk.gray("Input tokens:")} ${chalk.yellow(formatNumber(inputTokens))}`
+  );
+  console.log(
+    `${chalk.gray("Output tokens:")} ${chalk.yellow(formatNumber(outputTokens))}`
+  );
+  console.log(
+    `${chalk.gray("Total tokens:")} ${chalk.yellow(formatNumber(totalTokens))}`
+  );
+  console.log(
+    `${chalk.gray("Cached input:")} ${chalk.green(formatNumber(cachedInputTokens))}`
+  );
   console.log("");
 
-  console.log(`${chalk.gray("Real provider tokens:")} ${chalk.green(formatNumber(realTokens))}`);
-  console.log(`${chalk.gray("Estimated tokens:")} ${chalk.yellow(formatNumber(estimatedTokens))}`);
+  console.log(
+    `${chalk.gray("Real provider tokens:")} ${chalk.green(formatNumber(realTokens))}`
+  );
+  console.log(
+    `${chalk.gray("Estimated tokens:")} ${chalk.yellow(formatNumber(estimatedTokens))}`
+  );
 
   if (estimatedTokens > 0) {
-    console.log(chalk.gray("Note: estimated tokens are rough char/4 guesses, not billing-accurate."));
+    console.log(
+      chalk.gray("Note: estimated tokens are rough char/4 guesses, not billing-accurate.")
+    );
   }
 
   console.log("");
@@ -235,10 +249,7 @@ function printByModel(records: ModelRunRecord[]): void {
   console.log("");
 
   for (const model of models) {
-    const avgLatency =
-      model.runs === 0
-        ? 0
-        : model.latencyMs / model.runs;
+    const avgLatency = model.runs === 0 ? 0 : model.latencyMs / model.runs;
 
     console.log(
       `${chalk.magenta(model.modelKey.padEnd(18))} ` +

@@ -4,7 +4,9 @@ import crypto from "node:crypto";
 import type { CodemakkSession } from "./types.js";
 
 export class SessionStore {
-  constructor(private readonly rootDir = path.join(process.cwd(), ".codemakk", "sessions")) {}
+  constructor(
+    private readonly rootDir = path.join(process.cwd(), ".codemakk", "sessions")
+  ) {}
 
   async create(name: string, repoRoot = process.cwd()): Promise<CodemakkSession> {
     const now = Date.now();

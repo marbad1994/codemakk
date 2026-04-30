@@ -3,7 +3,10 @@ import path from "node:path";
 import { estimateTokens } from "../tokens/tokenEstimator.js";
 import type { BuiltContext, ContextFile } from "./types.js";
 
-export async function buildContext(files: string[], root = process.cwd()): Promise<BuiltContext> {
+export async function buildContext(
+  files: string[],
+  root = process.cwd()
+): Promise<BuiltContext> {
   const contextFiles: ContextFile[] = [];
 
   for (const file of files) {

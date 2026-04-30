@@ -12,9 +12,7 @@ export async function openSkillsMenu(state: AppState): Promise<void> {
     title: "Select skill",
     items: skills,
     renderItem: (skill, isSelected) => {
-      const marker = isSelected
-        ? chalk.black.bgGreen(" › ")
-        : chalk.gray("   ");
+      const marker = isSelected ? chalk.black.bgGreen(" › ") : chalk.gray("   ");
 
       const name = isSelected
         ? chalk.greenBright.bold(skill.name.padEnd(24))
@@ -65,9 +63,7 @@ export async function openModeMenu(state: AppState): Promise<void> {
     title: "Select routing mode",
     items: modes,
     renderItem: (mode, isSelected) => {
-      const marker = isSelected
-        ? chalk.black.bgCyan(" › ")
-        : chalk.gray("   ");
+      const marker = isSelected ? chalk.black.bgCyan(" › ") : chalk.gray("   ");
 
       const label = isSelected
         ? chalk.cyanBright.bold(mode.label.padEnd(14))
@@ -101,9 +97,7 @@ export async function openSpeedMenu(state: AppState): Promise<void> {
     title: "Select router speed",
     items: speeds,
     renderItem: (speed, isSelected) => {
-      const marker = isSelected
-        ? chalk.black.bgYellow(" › ")
-        : chalk.gray("   ");
+      const marker = isSelected ? chalk.black.bgYellow(" › ") : chalk.gray("   ");
 
       const label = `speed ${speed}`.padEnd(12);
       const description =
